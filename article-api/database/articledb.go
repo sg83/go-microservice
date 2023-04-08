@@ -24,7 +24,6 @@ type ArticlesData interface {
 	AddArticle(ar models.Article) error
 	GetArticlesForTagAndDate(tag string, d time.Time) ([]int, error)
 	GetRelatedTagsForTag(tag string, articles []int) ([]string, error)
-	init() error
 	Close()
 }
 
