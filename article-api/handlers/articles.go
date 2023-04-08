@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"fmt"
-
 	"github.com/gorilla/mux"
 	"github.com/sg83/go-microservice/article-api/database"
 	"github.com/sg83/go-microservice/article-api/models"
@@ -25,6 +23,30 @@ func NewArticles(l *zap.Logger, db database.ArticlesData, v *database.Validation
 	return &Articles{l, db, v}
 }
 
+// Get retrieves an article by ID.
+//
+// swagger:operation GET /articles/{id} articles Get
+//
+// ---
+// parameters:
+// - name: id
+//   in: path
+//   description: ID of the article to retrieve
+//   required: true
+//   type: integer
+// responses:
+//   '200':
+//     description: Article retrieved successfully
+//     schema:
+//       "$ref": "#/definitions/Article"
+//   '404':
+//     description: Article not found
+//     schema:
+//       "$ref": "#/definitions/GenericError"
+//   '500':
+//     description: Internal server error
+//     schema:
+//       "$ref": "#/definitions/GenericError"
 func (a *Articles) Get(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -54,17 +76,38 @@ func (a *Articles) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Create handles POST requests to add new products
+// Create adds a new article.
+//
+// swagger:operation POST /articles articles Create
+//
+// ---
+// parameters:
+// - name: article
+//   in: body
+//   description: Article to create
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/Article"
+// responses:
+//   '200':
+//     description: Article created successfully
+//   '400':
+//     description: Invalid request payload
+//     schema:
+//       "$ref": "#/definitions/GenericError"
+//   '500':
+//     description: Internal server error
+//     schema:
+//       "$ref": "#/definitions/GenericError"
 func (a *Articles) Create(w http.ResponseWriter, r *http.Request) {
 
 	a.l.Info("Create article", zap.Any("article:", r.Context().Value(KeyArticle{})))
 
 	// fetch the article from the context
-	//&article := r.Context().Value(KeyArticle{}).(*models.Article)
 	article, ok := r.Context().Value(KeyArticle{}).(*models.Article)
 	if !ok {
 		// handle the case where the value is not of the expected type
-		fmt.Println("fetching object from context")
+		a.l.Error("Error fetching object from context")
 		return
 	}
 

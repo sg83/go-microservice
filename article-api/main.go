@@ -46,10 +46,7 @@ func main() {
 	//Register handlers for the API's
 	getR := sm.Methods(http.MethodGet).Subrouter()
 	getR.HandleFunc("/articles/{id:[0-9]+}", ah.Get)
-	//re := regexp.MustCompile(`^/tags/(?:[^/]+)/((?:2016|2022)(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01]))$`)
-
-	//getR.HandleFunc("/tags/{tag:(?:[^/]+)}/{date:((?:2016|2022)(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01]))$)}", ah.GetTagSummary)
-	getR.HandleFunc("/tags/{tag:[a-z]+}", ah.GetTagSummary)
+	getR.HandleFunc("/tags/{tag}/{date}", ah.GetTagSummary)
 
 	postR := sm.Methods(http.MethodPost).Subrouter()
 	postR.HandleFunc("/articles", ah.Create)

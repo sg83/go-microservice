@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/sg83/go-microservice/article-api/database"
@@ -18,7 +17,6 @@ func (a *Articles) MiddlewareValidateArticle(next http.Handler) http.Handler {
 
 		article := &models.Article{}
 
-		fmt.Printf("req data %v\n", r.Body)
 		err := database.FromJSON(article, r.Body)
 		if err != nil {
 			a.l.Error("Deserializing article ", zap.String("Error: ", err.Error()))
@@ -27,19 +25,18 @@ func (a *Articles) MiddlewareValidateArticle(next http.Handler) http.Handler {
 			return
 		}
 
-		fmt.Printf("req json data %v\n", article)
 		// validate the product
-		/*
-			errs := a.v.Validate(article)
-			if len(errs) != 0 {
-				a.l.Error("Validating article", zap.Any("Errors: ", errs.Errors()))
 
-				// return the validation messages as an array
-				rw.WriteHeader(http.StatusUnprocessableEntity)
-				database.ToJSON(&ValidationError{Messages: errs.Errors()}, rw)
-				return
-			}
-		*/
+		errs := a.v.Validate(article)
+		if len(errs) != 0 {
+			a.l.Error("Validating article", zap.Strings("Errors: ", errs.Errors()))
+
+			// return the validation messages as an array
+			rw.WriteHeader(http.StatusUnprocessableEntity)
+			database.ToJSON(&ValidationError{Messages: errs.Errors()}, rw)
+			return
+		}
+
 		// add the product to the context
 		ctx := context.WithValue(r.Context(), KeyArticle{}, article)
 		r = r.WithContext(ctx)

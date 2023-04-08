@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -18,27 +19,37 @@ func (a *Articles) GetTagSummary(w http.ResponseWriter, r *http.Request) {
 
 	a.l.Info("Get tag summary", zap.String("tag:", tag), zap.String("date:", dateStr))
 
+	re := regexp.MustCompile(`^(20[0-2][0-3]|1[2-9]|[2-9]\d)(\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])$`)
+	if !re.MatchString(dateStr) {
+		a.l.Error("Date is not valid", zap.String("date:", dateStr))
+		http.Error(w, "Date is not valid", http.StatusBadRequest)
+		return
+	}
 	date, err := time.Parse("20060102", dateStr)
+	a.l.Info("Get tag summary", zap.String("date:", date.String()))
 	if err != nil {
+		a.l.Error("Could not parse date")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	articlesIds, err := a.db.GetArticlesForTagAndDate(tag, date)
 	//article, err := a.db.GetArticlesForTagAndDate(tagName, date)
-	if err != nil {
+	if (err != nil) || (len(articlesIds) == 0) {
+		a.l.Error("Articles with given tag not found")
 		http.Error(w, "Articles with given tag not found", http.StatusNotFound)
 		w.WriteHeader(http.StatusInternalServerError)
-		database.ToJSON(&GenericError{Message: err.Error()}, w)
+		database.ToJSON(&GenericError{Message: "Articles with given tag not found"}, w)
 		return
 	}
 	a.l.Info("Get tag summary", zap.Any("Articles with tag:", articlesIds))
 
-	relatedTags, err := a.db.GetRelatedTagsForTagAndDate(tag, date)
-	if err != nil {
+	relatedTags, err := a.db.GetRelatedTagsForTag(tag, articlesIds)
+	if (err != nil) || (len(relatedTags) == 0) {
+		a.l.Error("Related tags not found")
 		//http.Error(w, err.Error(), http.StatusInternalServerError)
 		http.Error(w, "Related tags not found", http.StatusNotFound)
 		w.WriteHeader(http.StatusInternalServerError)
-		database.ToJSON(&GenericError{Message: err.Error()}, w)
+		database.ToJSON(&GenericError{Message: "Related tags not found"}, w)
 		return
 	}
 	a.l.Info("Get tag summary", zap.Any("Related tags:", relatedTags))
