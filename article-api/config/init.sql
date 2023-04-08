@@ -29,3 +29,10 @@ values
      'some text, potentially containing simple markup about how live a healthy lifestyle ...', 
      '2023-04-07',
      '{"health", "medical", "science"}');
+
+insert into tags(tag, count, articles, related_tags)
+values
+    ('health', 
+    17, 
+    '{1,7}',
+    '{"fitness", "science"}');

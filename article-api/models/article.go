@@ -16,13 +16,13 @@ type Article struct {
 	// the date of the article
 	//
 	// required: true
-	Date string `json:"date" validate:"required"`
+	Date string `json:"date"`
 
 	// the body for this article
 	//
 	// required: true
 	// max length: 10000
-	Body string `json:"body"`
+	Body string `json:"body" validate:"required"`
 
 	// the tags for the article
 	//

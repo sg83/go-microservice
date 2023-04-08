@@ -24,6 +24,7 @@ services:
       image: article
       build:
         context: .
+      restart: on-failure:2
       networks:
         - backend
       ports:
