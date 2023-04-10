@@ -1,11 +1,11 @@
-package models
+package data
 
 type Tag struct {
 	// Tag name
 	//
 	// required: true
 	Tag string `json:"tag"`
-	// Number of tags for that day.
+	// Number of articles having the tag for that day.
 	//
 	// required: true
 	Count int `json:"count"`

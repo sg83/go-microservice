@@ -1,4 +1,4 @@
-package database
+package data
 
 import (
 	"fmt"
@@ -6,8 +6,7 @@ import (
 	"github.com/go-playground/validator"
 )
 
-// ValidationError wraps the validators FieldError so we do not
-// expose this to out code
+// ValidationError wraps the validators FieldError
 type ValidationError struct {
 	validator.FieldError
 }
@@ -45,23 +44,6 @@ func NewValidation() *Validation {
 	return &Validation{validate}
 }
 
-// Validate the item
-// for more detail the returned error can be cast into a
-// validator.ValidationErrors collection
-//
-//	if ve, ok := err.(validator.ValidationErrors); ok {
-//				fmt.Println(ve.Namespace())
-//				fmt.Println(ve.Field())
-//				fmt.Println(ve.StructNamespace())
-//				fmt.Println(ve.StructField())
-//				fmt.Println(ve.Tag())
-//				fmt.Println(ve.ActualTag())
-//				fmt.Println(ve.Kind())
-//				fmt.Println(ve.Type())
-//				fmt.Println(ve.Value())
-//				fmt.Println(ve.Param())
-//				fmt.Println()
-//		}
 func (v *Validation) Validate(i interface{}) ValidationErrors {
 	var errs validator.ValidationErrors
 
@@ -78,7 +60,7 @@ func (v *Validation) Validate(i interface{}) ValidationErrors {
 	var returnErrs []ValidationError
 	for _, err := range errs {
 		fmt.Printf("Validation error for param: %s", err.Param())
-		// cast the FieldError into our ValidationError and append to the slice
+		// cast the FieldError into ValidationError and append to the slice
 		ve := ValidationError{err}
 		returnErrs = append(returnErrs, ve)
 	}

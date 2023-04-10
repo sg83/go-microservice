@@ -1,4 +1,4 @@
-package handlers
+package utils
 
 // GenericError is a generic error message returned by a server
 type GenericError struct {

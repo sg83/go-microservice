@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -15,32 +14,33 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestGetArticle(t *testing.T) {
+func TestGetTagSummary(t *testing.T) {
 
 	tt := []struct {
-		article *data.Article
-		status  int
-		err     string
+		tagSummary *data.Tag
+		date       string
+		status     int
+		err        string
 	}{
 		{
-			article: &data.Article{
-				ID:    1,
-				Title: "Article1",
-				Body:  "This article is about health and fitness.",
-				Date:  "20-02-2023",
-				Tags:  []string{"health", "fitness"},
+			tagSummary: &data.Tag{
+				Tag:         "health",
+				Count:       3,
+				Articles:    []int{1, 3, 5},
+				RelatedTags: []string{"yoga", "fitness"},
 			},
+			date:   "20220512",
 			status: 200,
 			err:    "",
 		},
 		{
-			article: &data.Article{
-				ID:    2,
-				Title: "Article2",
-				Body:  "This article is about health and yoga.",
-				Date:  "20-02-2023",
-				Tags:  []string{"health", "yoga"},
+			tagSummary: &data.Tag{
+				Tag:         "lifestyle",
+				Count:       2,
+				Articles:    []int{1, 4},
+				RelatedTags: []string{"yoga", "fitness"},
 			},
+			date:   "20220512",
 			status: 200,
 			err:    "",
 		},
@@ -57,24 +57,27 @@ func TestGetArticle(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		// create a mock request with a URL containing an article ID
-		req, err := http.NewRequest("GET", "/articles?v="+strconv.Itoa(tc.article.ID), nil)
+		req, err := http.NewRequest("GET", "/tags/?v="+tc.tagSummary.Tag+"/?v="+tc.date, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// create a mock Articles struct with a mock database interface
 		mockdb := new(mocks.ArticlesData)
-		mockdb.On("GetArticleByID", tc.article.ID).Return(tc.article, nil)
+		mockdb.On("GetArticlesForTagAndDate", tc.tagSummary.Tag, tc.date).Return(tc.tagSummary.Articles, nil)
+		mockdb.On("GetRelatedTagsForTag", tc.tagSummary.Tag, tc.tagSummary.Articles).Return(tc.tagSummary.RelatedTags, nil)
+
 		articles := &Articles{logger, mockdb, nil}
 
 		//Hack to try to fake gorilla/mux vars
 		vars := map[string]string{
-			"id": strconv.Itoa(tc.article.ID),
+			"tag":  tc.tagSummary.Tag,
+			"date": tc.date,
 		}
 		req = mux.SetURLVars(req, vars)
 
 		// call the Get function with the mock response writer and request
-		articles.Get(w, req)
+		articles.GetTagSummary(w, req)
 
 		// check that the response status code is 200 OK
 		if w.Code != tc.status {
@@ -82,15 +85,15 @@ func TestGetArticle(t *testing.T) {
 		}
 
 		// check that the response body contains the expected article
-		expected := tc.article
-		actual := &data.Article{}
+		expected := tc.tagSummary
+		actual := &data.Tag{}
 		err = json.NewDecoder(w.Body).Decode(actual)
 		if err != nil {
 			t.Errorf("Error decoding response body: %v", err)
 		}
 		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expected article %v but got %v", expected, actual)
+			t.Errorf("Expected tag Summary %v but got %v", expected, actual)
 		}
-		t.Logf("Test passed for article id %d", tc.article.ID)
+		t.Logf("Test passed for tag %s", tc.tagSummary.Tag)
 	}
 }

@@ -3,9 +3,7 @@
 package mocks
 
 import (
-	time "time"
-
-	models "github.com/sg83/go-microservice/article-api/models"
+	"github.com/sg83/go-microservice/article-api/data"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -15,11 +13,11 @@ type ArticlesData struct {
 }
 
 // AddArticle provides a mock function with given fields: ar
-func (_m *ArticlesData) AddArticle(ar models.Article) error {
+func (_m *ArticlesData) AddArticle(ar data.Article) error {
 	ret := _m.Called(ar)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(models.Article) error); ok {
+	if rf, ok := ret.Get(0).(func(data.Article) error); ok {
 		r0 = rf(ar)
 	} else {
 		r0 = ret.Error(0)
@@ -34,19 +32,19 @@ func (_m *ArticlesData) Close() {
 }
 
 // GetArticleByID provides a mock function with given fields: id
-func (_m *ArticlesData) GetArticleByID(id int) (*models.Article, error) {
+func (_m *ArticlesData) GetArticleByID(id int) (*data.Article, error) {
 	ret := _m.Called(id)
 
-	var r0 *models.Article
+	var r0 *data.Article
 	var r1 error
-	if rf, ok := ret.Get(0).(func(int) (*models.Article, error)); ok {
+	if rf, ok := ret.Get(0).(func(int) (*data.Article, error)); ok {
 		return rf(id)
 	}
-	if rf, ok := ret.Get(0).(func(int) *models.Article); ok {
+	if rf, ok := ret.Get(0).(func(int) *data.Article); ok {
 		r0 = rf(id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*models.Article)
+			r0 = ret.Get(0).(*data.Article)
 		}
 	}
 
@@ -59,25 +57,25 @@ func (_m *ArticlesData) GetArticleByID(id int) (*models.Article, error) {
 	return r0, r1
 }
 
-// GetArticlesForTagAndDate provides a mock function with given fields: tag, d
-func (_m *ArticlesData) GetArticlesForTagAndDate(tag string, d time.Time) ([]int, error) {
-	ret := _m.Called(tag, d)
+// GetArticlesForTagAndDate provides a mock function with given fields: tag, date
+func (_m *ArticlesData) GetArticlesForTagAndDate(tag string, date string) ([]int, error) {
+	ret := _m.Called(tag, date)
 
 	var r0 []int
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, time.Time) ([]int, error)); ok {
-		return rf(tag, d)
+	if rf, ok := ret.Get(0).(func(string, string) ([]int, error)); ok {
+		return rf(tag, date)
 	}
-	if rf, ok := ret.Get(0).(func(string, time.Time) []int); ok {
-		r0 = rf(tag, d)
+	if rf, ok := ret.Get(0).(func(string, string) []int); ok {
+		r0 = rf(tag, date)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]int)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(string, time.Time) error); ok {
-		r1 = rf(tag, d)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(tag, date)
 	} else {
 		r1 = ret.Error(1)
 	}

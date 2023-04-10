@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/sg83/go-microservice/article-api/database"
-	"github.com/sg83/go-microservice/article-api/models"
+	"github.com/sg83/go-microservice/article-api/data"
+	"github.com/sg83/go-microservice/article-api/utils"
 	"go.uber.org/zap"
 )
 
@@ -15,25 +15,24 @@ func (a *Articles) MiddlewareValidateArticle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Add("Content-Type", "application/json")
 
-		article := &models.Article{}
+		article := &data.Article{}
 
-		err := database.FromJSON(article, r.Body)
+		err := utils.FromJSON(article, r.Body)
 		if err != nil {
 			a.l.Error("Deserializing article ", zap.String("Error: ", err.Error()))
 			rw.WriteHeader(http.StatusBadRequest)
-			database.ToJSON(&GenericError{Message: err.Error()}, rw)
+			utils.ToJSON(&utils.GenericError{Message: err.Error()}, rw)
 			return
 		}
 
 		// validate the product
-
 		errs := a.v.Validate(article)
 		if len(errs) != 0 {
 			a.l.Error("Validating article", zap.Strings("Errors: ", errs.Errors()))
 
 			// return the validation messages as an array
 			rw.WriteHeader(http.StatusUnprocessableEntity)
-			database.ToJSON(&ValidationError{Messages: errs.Errors()}, rw)
+			utils.ToJSON(&utils.ValidationError{Messages: errs.Errors()}, rw)
 			return
 		}
 

@@ -1,7 +1,7 @@
-package models
+package data
 
 type Article struct {
-	// Unique identifier for the product
+	// Unique identifier for the article
 	//
 	// required: true
 	// min: 1

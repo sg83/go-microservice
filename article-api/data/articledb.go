@@ -1,4 +1,4 @@
-package database
+package data
 
 import (
 	"database/sql"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/lib/pq"
 
-	"github.com/sg83/go-microservice/article-api/models"
 	"go.uber.org/zap"
 )
 
@@ -20,9 +19,9 @@ type ArticlesDb struct {
 }
 
 type ArticlesData interface {
-	GetArticleByID(id int) (*models.Article, error)
-	AddArticle(ar models.Article) error
-	GetArticlesForTagAndDate(tag string, d time.Time) ([]int, error)
+	GetArticleByID(id int) (*Article, error)
+	AddArticle(ar Article) error
+	GetArticlesForTagAndDate(tag string, date string) ([]int, error)
 	GetRelatedTagsForTag(tag string, articles []int) ([]string, error)
 	Close()
 }
@@ -87,8 +86,8 @@ func connToString(info connection) string {
 		info.User, info.Password, info.Host, info.Port, info.DBName)
 }
 
-func (db *ArticlesDb) GetArticleByID(id int) (*models.Article, error) {
-	var a models.Article
+func (db *ArticlesDb) GetArticleByID(id int) (*Article, error) {
+	var a Article
 	db.l.Info("Get article ", zap.Int("id :", id))
 
 	err := db.postgres.QueryRow("SELECT * FROM articles WHERE id = $1", id).Scan(&a.ID, &a.Title, &a.Body, &a.Date, pq.Array(&a.Tags))
@@ -103,17 +102,19 @@ func (db *ArticlesDb) GetArticleByID(id int) (*models.Article, error) {
 }
 
 // AddProduct adds a new product to the database
-func (db *ArticlesDb) AddArticle(ar models.Article) error {
+func (db *ArticlesDb) AddArticle(ar Article) error {
 	db.l.Info("Add new article ", zap.String("title :", ar.Title))
 
-	query := `insert into articles(id, title, date, body, tags) values(nextval('articles_id_seq'), $1, $2, $3, $4);`
+	query := `insert into articles(id, title, date, body, tags) values(nextval('articles_id_seq'), $1, $2, $3, $4) returning id`
 
-	_, err := db.postgres.Exec(query, ar.Title, ar.Date, ar.Body, pq.Array(ar.Tags))
-
+	var id int
+	err := db.postgres.QueryRow(query, ar.Title, ar.Date, ar.Body, pq.Array(ar.Tags)).Scan(&id)
 	if err != nil {
 		db.l.Error("DB Query failed ", zap.Error(err))
 		return err
 	}
+
+	db.l.Info("Inserted article \n", zap.Int("Id", id))
 	return nil
 }
 
@@ -121,9 +122,14 @@ func (db *ArticlesDb) Close() {
 	db.postgres.Close()
 }
 
-func (db *ArticlesDb) GetArticlesForTagAndDate(tag string, d time.Time) ([]int, error) {
-	db.l.Info("GetArticlesForTagAndDate", zap.String("date: ", d.String()))
-	rows, err := db.postgres.Query("SELECT id FROM articles WHERE $1 = ANY(tags) AND date = $2", tag, d.Format("2006-01-02"))
+func (db *ArticlesDb) GetArticlesForTagAndDate(tag string, d string) ([]int, error) {
+	db.l.Info("GetArticlesForTagAndDate", zap.String("date: ", d))
+	date, err := time.Parse("20060102", d)
+	if err != nil {
+		db.l.Error("Could not parse date")
+		return nil, err
+	}
+	rows, err := db.postgres.Query("SELECT id FROM articles WHERE $1 = ANY(tags) AND date = $2", tag, date.Format("2006-01-02"))
 	if err != nil {
 		db.l.Error("sql query failed", zap.Error(err))
 		return nil, err

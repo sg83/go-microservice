@@ -10,7 +10,7 @@ import (
 
 	gohandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/sg83/go-microservice/article-api/database"
+	"github.com/sg83/go-microservice/article-api/data"
 	"github.com/sg83/go-microservice/article-api/handlers"
 	"go.uber.org/zap"
 )
@@ -24,14 +24,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	sugar := logger.Sugar()
-	sugar.Info("Hello from zap logger")
 	defer logger.Sync()
 
-	v := database.NewValidation()
+	//Initialize data validator
+	v := data.NewValidation()
 
 	//Connect to database
-	db := database.NewDB(logger)
+	db := data.NewDB(logger)
 	defer db.Close()
 
 	//Create handlers
@@ -67,11 +66,11 @@ func main() {
 
 	// start the server
 	go func() {
-		sugar.Info("Starting server on port ", bindAddress)
+		logger.Info("Starting server on port ", zap.String("address", bindAddress))
 
 		err := s.ListenAndServe()
 		if err != nil {
-			sugar.Error("Error starting server", "error", err)
+			logger.Error("Error starting server", zap.Error(err))
 			os.Exit(1)
 		}
 	}()
@@ -82,7 +81,7 @@ func main() {
 
 	// Block until a signal is received.
 	sig := <-c
-	sugar.Info("Got signal:", sig)
+	logger.Info("Got signal:", zap.Any("signal", sig))
 
 	// gracefully shutdown the server, waiting max 30 seconds for current operations to complete
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
