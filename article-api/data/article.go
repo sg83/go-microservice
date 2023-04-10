@@ -3,7 +3,6 @@ package data
 type Article struct {
 	// Unique identifier for the article
 	//
-	// required: true
 	// min: 1
 	ID int `json:"id"`
 

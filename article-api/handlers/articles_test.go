@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -17,12 +18,16 @@ import (
 
 func TestGetArticle(t *testing.T) {
 
+	notFoundErr := errors.New("Article not found")
+
 	tt := []struct {
+		id      int
 		article *data.Article
 		status  int
-		err     string
+		err     error
 	}{
 		{
+			id: 1,
 			article: &data.Article{
 				ID:    1,
 				Title: "Article1",
@@ -31,9 +36,10 @@ func TestGetArticle(t *testing.T) {
 				Tags:  []string{"health", "fitness"},
 			},
 			status: 200,
-			err:    "",
+			err:    nil,
 		},
 		{
+			id: 2,
 			article: &data.Article{
 				ID:    2,
 				Title: "Article2",
@@ -42,7 +48,13 @@ func TestGetArticle(t *testing.T) {
 				Tags:  []string{"health", "yoga"},
 			},
 			status: 200,
-			err:    "",
+			err:    nil,
+		},
+		{
+			id:      3,
+			article: &data.Article{},
+			status:  404,
+			err:     notFoundErr,
 		},
 	}
 
@@ -57,19 +69,19 @@ func TestGetArticle(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		// create a mock request with a URL containing an article ID
-		req, err := http.NewRequest("GET", "/articles?v="+strconv.Itoa(tc.article.ID), nil)
+		req, err := http.NewRequest("GET", "/articles?v="+strconv.Itoa(tc.id), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// create a mock Articles struct with a mock database interface
 		mockdb := new(mocks.ArticlesData)
-		mockdb.On("GetArticleByID", tc.article.ID).Return(tc.article, nil)
+		mockdb.On("GetArticleByID", tc.id).Return(tc.article, tc.err)
 		articles := &Articles{logger, mockdb, nil}
 
 		//Hack to try to fake gorilla/mux vars
 		vars := map[string]string{
-			"id": strconv.Itoa(tc.article.ID),
+			"id": strconv.Itoa(tc.id),
 		}
 		req = mux.SetURLVars(req, vars)
 
@@ -81,16 +93,18 @@ func TestGetArticle(t *testing.T) {
 			t.Errorf("Expected status code %d but got %d", tc.status, w.Code)
 		}
 
-		// check that the response body contains the expected article
-		expected := tc.article
-		actual := &data.Article{}
-		err = json.NewDecoder(w.Body).Decode(actual)
-		if err != nil {
-			t.Errorf("Error decoding response body: %v", err)
+		if w.Code == 200 {
+			// check that the response body contains the expected article
+			expected := tc.article
+			actual := &data.Article{}
+			err = json.NewDecoder(w.Body).Decode(actual)
+			if err != nil {
+				t.Errorf("Error decoding response body: %v", err)
+			}
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf("Expected article %v but got %v", expected, actual)
+			}
 		}
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expected article %v but got %v", expected, actual)
-		}
-		t.Logf("Test passed for article id %d", tc.article.ID)
+		t.Logf("Test completed for article id %d", tc.id)
 	}
 }

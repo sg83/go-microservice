@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -16,33 +17,49 @@ import (
 
 func TestGetTagSummary(t *testing.T) {
 
+	dateInvalidErr := errors.New("Date is not valid")
 	tt := []struct {
-		tagSummary *data.Tag
+		tag_name   string
 		date       string
+		tagSummary *data.Tag
 		status     int
-		err        string
+		err        error
 	}{
 		{
+			tag_name: "health",
+			date:     "20220512",
 			tagSummary: &data.Tag{
 				Tag:         "health",
 				Count:       3,
 				Articles:    []int{1, 3, 5},
 				RelatedTags: []string{"yoga", "fitness"},
 			},
-			date:   "20220512",
 			status: 200,
-			err:    "",
+			err:    nil,
 		},
 		{
+			tag_name: "lifestyle",
+			date:     "20220512",
 			tagSummary: &data.Tag{
 				Tag:         "lifestyle",
 				Count:       2,
 				Articles:    []int{1, 4},
 				RelatedTags: []string{"yoga", "fitness"},
 			},
-			date:   "20220512",
 			status: 200,
-			err:    "",
+			err:    nil,
+		},
+		{
+			tag_name: "health",
+			date:     "20220540",
+			tagSummary: &data.Tag{
+				Tag:         "",
+				Count:       0,
+				Articles:    []int{},
+				RelatedTags: []string{},
+			},
+			status: 400,
+			err:    dateInvalidErr,
 		},
 	}
 
@@ -57,21 +74,21 @@ func TestGetTagSummary(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		// create a mock request with a URL containing an article ID
-		req, err := http.NewRequest("GET", "/tags/?v="+tc.tagSummary.Tag+"/?v="+tc.date, nil)
+		req, err := http.NewRequest("GET", "/tags/?v="+tc.tag_name+"/?v="+tc.date, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// create a mock Articles struct with a mock database interface
 		mockdb := new(mocks.ArticlesData)
-		mockdb.On("GetArticlesForTagAndDate", tc.tagSummary.Tag, tc.date).Return(tc.tagSummary.Articles, nil)
-		mockdb.On("GetRelatedTagsForTag", tc.tagSummary.Tag, tc.tagSummary.Articles).Return(tc.tagSummary.RelatedTags, nil)
+		mockdb.On("GetArticlesForTagAndDate", tc.tag_name, tc.date).Return(tc.tagSummary.Articles, nil)
+		mockdb.On("GetRelatedTagsForTag", tc.tag_name, tc.tagSummary.Articles).Return(tc.tagSummary.RelatedTags, err)
 
 		articles := &Articles{logger, mockdb, nil}
 
 		//Hack to try to fake gorilla/mux vars
 		vars := map[string]string{
-			"tag":  tc.tagSummary.Tag,
+			"tag":  tc.tag_name,
 			"date": tc.date,
 		}
 		req = mux.SetURLVars(req, vars)
@@ -84,16 +101,18 @@ func TestGetTagSummary(t *testing.T) {
 			t.Errorf("Expected status code %d but got %d", tc.status, w.Code)
 		}
 
-		// check that the response body contains the expected article
-		expected := tc.tagSummary
-		actual := &data.Tag{}
-		err = json.NewDecoder(w.Body).Decode(actual)
-		if err != nil {
-			t.Errorf("Error decoding response body: %v", err)
+		if w.Code == 200 {
+			// check that the response body contains the expected article
+			expected := tc.tagSummary
+			actual := &data.Tag{}
+			err = json.NewDecoder(w.Body).Decode(actual)
+			if err != nil {
+				t.Errorf("Error decoding response body: %v", err)
+			}
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf("Expected tag Summary %v but got %v", expected, actual)
+			}
 		}
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("Expected tag Summary %v but got %v", expected, actual)
-		}
-		t.Logf("Test passed for tag %s", tc.tagSummary.Tag)
+		t.Logf("Test completed for tag %s", tc.tag_name)
 	}
 }

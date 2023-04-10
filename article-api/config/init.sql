@@ -10,9 +10,7 @@ CREATE TABLE IF NOT EXISTS articles (
 
 CREATE TABLE IF NOT EXISTS tags (
     tag VARCHAR PRIMARY KEY,
-    count INTEGER NOT NULL,
     articles INTEGER[],
-    related_tags TEXT[]
 );
 
 insert into articles(title, body, date, tags)
@@ -29,10 +27,3 @@ values
      'some text, potentially containing simple markup about how live a healthy lifestyle ...', 
      '2023-04-07',
      '{"health", "medical", "science"}');
-
-insert into tags(tag, count, articles, related_tags)
-values
-    ('health', 
-    17, 
-    '{1,7}',
-    '{"fitness", "science"}');
